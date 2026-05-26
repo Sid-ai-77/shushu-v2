@@ -296,30 +296,81 @@ function FindingCard({ finding }: { finding: Finding }) {
 
 function ExportBar({ id }: { id: string }) {
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const [promptText, setPromptText] = useState<string>("");
+  const [activeTool, setActiveTool] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const tools: { tool: string; label: string }[] = [
+    { tool: "cursor", label: "Cursor 프롬프트" },
+    { tool: "v0", label: "v0 프롬프트" },
+    { tool: "lovable", label: "Lovable 프롬프트" },
+    { tool: "claude-code", label: "Claude Code 프롬프트" },
+  ];
+
+  const loadPrompt = async (tool: string) => {
+    setLoading(true);
+    setActiveTool(tool);
+    setCopied(false);
+    try {
+      const res = await fetch(`${baseUrl}/api/export?id=${id}&format=prompt&tool=${tool}`);
+      const text = await res.text();
+      setPromptText(text);
+    } catch (err) {
+      setPromptText(`(불러오기 실패) ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(promptText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+
   return (
-    <div className="export-bar">
-      <div className="lh">
-        <h3>결과 내보내기</h3>
-        <p>마크다운 리포트 또는 바이브코딩 프롬프트 (Cursor·v0·Lovable·Claude Code).</p>
+    <>
+      <div className="export-bar">
+        <div className="lh">
+          <h3>결과 내보내기</h3>
+          <p>마크다운 리포트는 다운로드·바이브코딩 프롬프트는 클릭 시 아래에 표시 (복사 편리).</p>
+        </div>
+        <div className="rh">
+          <a className="btn" href={`${baseUrl}/api/export?id=${id}&format=markdown`} download>
+            리포트 다운 ↓
+          </a>
+          {tools.map((t) => (
+            <button
+              key={t.tool}
+              className={`btn ghost ${activeTool === t.tool ? "active" : ""}`}
+              onClick={() => loadPrompt(t.tool)}
+              disabled={loading}
+            >
+              {loading && activeTool === t.tool ? "불러오는 중…" : t.label}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="rh">
-        <a className="btn" href={`${baseUrl}/api/export?id=${id}&format=markdown`} download>
-          리포트 다운 ↓
-        </a>
-        <a className="btn ghost" href={`${baseUrl}/api/export?id=${id}&format=prompt&tool=cursor`} download>
-          Cursor 프롬프트
-        </a>
-        <a className="btn ghost" href={`${baseUrl}/api/export?id=${id}&format=prompt&tool=v0`} download>
-          v0 프롬프트
-        </a>
-        <a className="btn ghost" href={`${baseUrl}/api/export?id=${id}&format=prompt&tool=lovable`} download>
-          Lovable 프롬프트
-        </a>
-        <a className="btn ghost" href={`${baseUrl}/api/export?id=${id}&format=prompt&tool=claude-code`} download>
-          Claude Code 프롬프트
-        </a>
-      </div>
-    </div>
+
+      {promptText && (
+        <div className="prompt-box">
+          <div className="prompt-head">
+            <div className="prompt-label">
+              {tools.find((t) => t.tool === activeTool)?.label || "프롬프트"} · 복사해서 바로 붙여넣으세요
+            </div>
+            <button className="btn pink small" onClick={handleCopy}>
+              {copied ? "복사됨 ✓" : "복사"}
+            </button>
+          </div>
+          <pre className="prompt-pre">{promptText}</pre>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -424,6 +475,15 @@ const globalStyles = `
 .export-bar .rh { display: flex; gap: 8px; flex-wrap: wrap; }
 .export-bar .btn { background: #fff; color: var(--ink); }
 .export-bar .btn.ghost { background: rgba(255,255,255,0.12); color: #fff; }
+.export-bar .btn.ghost.active { background: var(--accent); color: #fff; }
+.export-bar .btn.ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn.small { padding: 7px 14px; font-size: 12px; border-radius: 8px; }
+
+.prompt-box { margin-top: 14px; background: #0F0F0F; color: #E5E7EB; border-radius: 14px; overflow: hidden; }
+.prompt-head { padding: 16px 22px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; border-bottom: 1px solid #1F1F1F; }
+.prompt-label { font-size: 13px; font-weight: 600; color: #E5E7EB; letter-spacing: -0.015em; }
+.prompt-pre { margin: 0; padding: 22px; font-family: 'SF Mono', 'Consolas', ui-monospace, monospace; font-size: 12px; line-height: 1.7; color: #A8E6CF; white-space: pre-wrap; word-break: break-word; max-height: 480px; overflow-y: auto; }
 
 .reset-row { margin-top: 18px; text-align: center; }
 
