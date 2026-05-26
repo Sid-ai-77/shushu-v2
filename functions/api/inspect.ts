@@ -10,6 +10,7 @@ import {
   checkRateLimit,
 } from "../../src/domains/ingest/storage";
 import { runQuery } from "../../src/domains/query";
+import { runLint } from "../../src/domains/lint";
 import type {
   ShushuEnv,
   InspectionResult,
@@ -120,6 +121,11 @@ export const onRequestPost = async (ctx: OnRequestContext): Promise<Response> =>
     if (queryResult.aiOk) {
       result.findings = [...result.findings, ...queryResult.findings];
     }
+
+    // Day 6 Lint = 중복 제거 + 우선순위 정렬
+    result.status = "linting";
+    const lintResult = runLint({ findings: result.findings });
+    result.findings = lintResult.findings;
 
     result.status = "done";
     result.finishedAt = new Date().toISOString();
