@@ -1,7 +1,7 @@
 // Ingest 도메인 — screenshot
-// Cloudflare Browser Rendering으로 데스크탑·모바일 캡처 + R2 저장
+// Cloudflare Browser Rendering REST API로 데스크탑·모바일 캡처 + R2 저장
+// (Cloudflare Pages는 Browser binding 직접 미지원이라 REST API 우회)
 
-import puppeteer, { type BrowserWorker } from "@cloudflare/puppeteer";
 import type { ShushuEnv } from "@/types";
 
 const R2_SCREENSHOT_PREFIX = "screenshots/";
@@ -21,59 +21,73 @@ export async function captureSite(
   inspectionId: string,
   url: string,
 ): Promise<CapturedScreenshots | null> {
-  if (!env.BROWSER) {
+  if (!env.CF_ACCOUNT_ID || !env.CF_API_TOKEN) {
     return null;
   }
 
-  let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
+  const [desktopBuffer, mobileBuffer] = await Promise.all([
+    fetchScreenshot(env.CF_ACCOUNT_ID, env.CF_API_TOKEN, url, DESKTOP_VIEWPORT),
+    fetchScreenshot(env.CF_ACCOUNT_ID, env.CF_API_TOKEN, url, MOBILE_VIEWPORT),
+  ]);
+
+  if (!desktopBuffer || !mobileBuffer) {
+    return null;
+  }
+
+  const desktopKey = `${R2_SCREENSHOT_PREFIX}${inspectionId}-desktop.png`;
+  const mobileKey = `${R2_SCREENSHOT_PREFIX}${inspectionId}-mobile.png`;
+
+  await env.SHUSHU_R2.put(desktopKey, desktopBuffer);
+  await env.SHUSHU_R2.put(mobileKey, mobileBuffer);
+
+  return {
+    desktopKey,
+    mobileKey,
+    desktopBytes: desktopBuffer.byteLength,
+    mobileBytes: mobileBuffer.byteLength,
+    capturedAt: new Date().toISOString(),
+  };
+}
+
+async function fetchScreenshot(
+  accountId: string,
+  apiToken: string,
+  url: string,
+  viewport: { width: number; height: number },
+): Promise<ArrayBuffer | null> {
+  const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/browser-rendering/screenshot`;
+
+  const body = {
+    url,
+    viewport,
+    screenshotOptions: {
+      type: "png",
+      fullPage: false,
+    },
+    gotoOptions: {
+      waitUntil: "networkidle0",
+      timeout: 30000,
+    },
+  };
 
   try {
-    browser = await puppeteer.launch(env.BROWSER as unknown as BrowserWorker);
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
 
-    // Desktop 캡처
-    const desktopPage = await browser.newPage();
-    await desktopPage.setViewport(DESKTOP_VIEWPORT);
-    await desktopPage.goto(url, { waitUntil: "networkidle0", timeout: 30000 });
-    const desktopBuffer = (await desktopPage.screenshot({
-      type: "png",
-      fullPage: false,
-    })) as Uint8Array;
-    await desktopPage.close();
-
-    // Mobile 캡처
-    const mobilePage = await browser.newPage();
-    await mobilePage.setViewport(MOBILE_VIEWPORT);
-    await mobilePage.goto(url, { waitUntil: "networkidle0", timeout: 30000 });
-    const mobileBuffer = (await mobilePage.screenshot({
-      type: "png",
-      fullPage: false,
-    })) as Uint8Array;
-    await mobilePage.close();
-
-    await browser.close();
-    browser = null;
-
-    const desktopKey = `${R2_SCREENSHOT_PREFIX}${inspectionId}-desktop.png`;
-    const mobileKey = `${R2_SCREENSHOT_PREFIX}${inspectionId}-mobile.png`;
-
-    await env.SHUSHU_R2.put(desktopKey, desktopBuffer);
-    await env.SHUSHU_R2.put(mobileKey, mobileBuffer);
-
-    return {
-      desktopKey,
-      mobileKey,
-      desktopBytes: desktopBuffer.byteLength,
-      mobileBytes: mobileBuffer.byteLength,
-      capturedAt: new Date().toISOString(),
-    };
-  } catch (err) {
-    if (browser) {
-      try {
-        await browser.close();
-      } catch {
-        // ignore
-      }
+    if (!response.ok) {
+      console.error(`Browser Rendering API ${response.status}:`, await response.text());
+      return null;
     }
-    throw err;
+
+    return await response.arrayBuffer();
+  } catch (err) {
+    console.error("Browser Rendering fetch failed:", err);
+    return null;
   }
 }

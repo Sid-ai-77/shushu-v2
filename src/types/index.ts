@@ -78,11 +78,9 @@ export interface ShushuEnv {
   SHUSHU_KV: KVNamespace;
   SHUSHU_R2: R2Bucket;
   GEMINI_API_KEY: string;
-  BROWSER?: BrowserBinding;
-}
-
-export interface BrowserBinding {
-  fetch(request: Request): Promise<Response>;
+  // Browser Rendering REST API (옵션·있으면 캡처 활성)
+  CF_ACCOUNT_ID?: string;
+  CF_API_TOKEN?: string;
 }
 
 // Cloudflare 타입 (minimal·@cloudflare/workers-types 없이 사용 가능)
