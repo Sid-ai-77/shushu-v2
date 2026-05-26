@@ -33,7 +33,7 @@ export const onRequestPost = async (ctx: OnRequestContext): Promise<Response> =>
   try {
     const ip = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "anonymous";
 
-    const rateLimit = await checkRateLimit(env, ip, 10);
+    const rateLimit = await checkRateLimit(env, ip, 200);
     if (!rateLimit.allowed) {
       return json(
         {
