@@ -43,6 +43,7 @@ export interface RunQueryResult {
   findings: Finding[];
   aiOk: boolean;
   aiError?: string;
+  aiRawText?: string;
   tokensUsed?: number;
 }
 
@@ -76,6 +77,7 @@ export async function runQuery(input: RunQueryInput): Promise<RunQueryResult> {
       findings: [],
       aiOk: false,
       aiError: result.error,
+      aiRawText: result.rawText?.slice(0, 800),
       tokensUsed: result.tokensUsed,
     };
   }

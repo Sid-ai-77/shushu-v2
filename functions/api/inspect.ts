@@ -134,6 +134,7 @@ export const onRequestPost = async (ctx: OnRequestContext): Promise<Response> =>
         ai: {
           ok: queryResult.aiOk,
           error: queryResult.aiError,
+          rawText: queryResult.aiRawText,
           tokensUsed: queryResult.tokensUsed,
         },
         rateLimit: { remaining: rateLimit.remaining },
