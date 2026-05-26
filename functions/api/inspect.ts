@@ -9,6 +9,7 @@ import {
   saveHtmlSnapshot,
   checkRateLimit,
 } from "../../src/domains/ingest/storage";
+import { runQuery } from "../../src/domains/query";
 import type {
   ShushuEnv,
   InspectionResult,
@@ -96,7 +97,30 @@ export const onRequestPost = async (ctx: OnRequestContext): Promise<Response> =>
       }
     }
 
-    // Day 4~ Query·Lint·Export 도메인 진입 자리 (현재는 휴리스틱만)
+    // Day 4~5 Query 도메인 (Gemini AI 분석)
+    result.status = "querying";
+    await saveInspectionMeta(env, result);
+
+    const queryResult = await runQuery({
+      env,
+      url: body.url,
+      html: site.html,
+      heuristicSummary: {
+        htmlBytes: site.htmlBytes,
+        domNodes: parsed.domNodes,
+        domDepth: parsed.domDepth,
+        inlineStyles: parsed.inlineStyles,
+        consoleLogs: parsed.consoleLogs,
+        altMissing: parsed.altMissing,
+        metaTags: parsed.metaTags,
+      },
+      githubMeta: result.meta.github,
+    });
+
+    if (queryResult.aiOk) {
+      result.findings = [...result.findings, ...queryResult.findings];
+    }
+
     result.status = "done";
     result.finishedAt = new Date().toISOString();
 
@@ -107,6 +131,11 @@ export const onRequestPost = async (ctx: OnRequestContext): Promise<Response> =>
         ok: true,
         id,
         result,
+        ai: {
+          ok: queryResult.aiOk,
+          error: queryResult.aiError,
+          tokensUsed: queryResult.tokensUsed,
+        },
         rateLimit: { remaining: rateLimit.remaining },
       },
       200,
