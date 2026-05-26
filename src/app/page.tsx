@@ -242,8 +242,8 @@ function ResultCard(props: {
       {result.meta.screenshots && (
         <div className="screenshots-section">
           <div className="screenshots-head">
-            <h3>슈슈가 본 화면</h3>
-            <p>Cloudflare Browser Rendering으로 실제 사이트를 로드하고 데스크탑·모바일 양쪽 캡처했습니다.</p>
+            <h3>슈슈가 본 메인 화면</h3>
+            <p>홈 페이지 데스크탑·모바일 양쪽 캡처입니다.</p>
           </div>
           <div className="screenshots-grid">
             <div className="shot-card">
@@ -258,6 +258,42 @@ function ResultCard(props: {
                 <img src={result.meta.screenshots.mobileUrl} alt="모바일 캡처" />
               </a>
             </div>
+          </div>
+        </div>
+      )}
+
+      {result.meta.scenarios && result.meta.scenarios.length > 0 && (
+        <div className="scenarios-section">
+          <div className="screenshots-head">
+            <h3>슈슈가 둘러본 페이지 · {result.meta.scenarios.length}개 시나리오</h3>
+            <p>홈 페이지에서 발견한 주요 링크를 자동 추정해서 데스크탑·모바일 양쪽 직접 방문·캡처했습니다.</p>
+          </div>
+          <div className="scenarios-grid">
+            {result.meta.scenarios.map((s) => (
+              <div key={s.id} className="scenario-card">
+                <div className="scenario-head">
+                  <div className="scenario-name">{scenarioLabel(s.scenario)}</div>
+                  <div className={`scenario-status ${s.httpStatus && s.httpStatus >= 400 ? "bad" : "ok"}`}>
+                    {s.httpStatus ? `HTTP ${s.httpStatus}` : "—"}
+                  </div>
+                </div>
+                <div className="scenario-url">{s.url}</div>
+                <div className="scenario-source">{s.source}</div>
+                {s.desktopUrl && (
+                  <div className="scenario-shot">
+                    <a href={s.desktopUrl} target="_blank" rel="noopener noreferrer">
+                      <img src={s.desktopUrl} alt={`${s.scenario} desktop`} />
+                    </a>
+                  </div>
+                )}
+                {s.networkErrors.length > 0 && (
+                  <div className="scenario-error">⚠ {s.networkErrors.length}건 네트워크 오류</div>
+                )}
+                {s.consoleErrors.length > 0 && (
+                  <div className="scenario-error">⚠ {s.consoleErrors.length}건 콘솔 에러</div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -284,6 +320,24 @@ function ResultCard(props: {
       </div>
     </>
   );
+}
+
+const SCENARIO_LABELS: Record<string, string> = {
+  signup: "회원가입",
+  login: "로그인",
+  pricing: "가격·구독",
+  search: "검색",
+  contact: "문의",
+  checkout: "결제·장바구니",
+  about: "소개·회사",
+  blog: "블로그·소식",
+  product: "제품·서비스",
+  docs: "문서·가이드",
+  other: "기타 페이지",
+};
+
+function scenarioLabel(scenario: string): string {
+  return SCENARIO_LABELS[scenario] || scenario;
 }
 
 function FilterChip(props: { on: boolean; onClick: () => void; dot: string; label: string; cnt: number }) {
@@ -473,6 +527,21 @@ const globalStyles = `
 .shot-label { padding: 10px 14px; font-size: 11px; font-weight: 700; color: var(--ink2); background: var(--line2); letter-spacing: 0.02em; }
 .shot-card img { display: block; width: 100%; height: auto; }
 .shot-card a { display: block; }
+
+.scenarios-section { margin-bottom: 24px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px; }
+.scenarios-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.scenario-card { background: #FAFAF9; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.scenario-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+.scenario-name { font-size: 13px; font-weight: 700; color: var(--ink); letter-spacing: -0.015em; }
+.scenario-status { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 5px; letter-spacing: 0.02em; }
+.scenario-status.ok { background: var(--auto-soft); color: #065F46; }
+.scenario-status.bad { background: #FEE2E2; color: #991B1B; }
+.scenario-url { font-size: 11px; color: var(--mute); font-weight: 500; word-break: break-all; margin-bottom: 4px; }
+.scenario-source { font-size: 10px; color: var(--mute); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
+.scenario-shot { margin-top: 8px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+.scenario-shot img { display: block; width: 100%; height: auto; }
+.scenario-shot a { display: block; }
+.scenario-error { margin-top: 8px; font-size: 11px; color: #991B1B; font-weight: 600; padding: 6px 10px; background: #FEE2E2; border-radius: 6px; }
 
 .results-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
 .results-head h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.025em; }

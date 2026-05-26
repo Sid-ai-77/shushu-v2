@@ -12,6 +12,8 @@ import {
 import { runQuery } from "../../src/domains/query";
 import { runLint } from "../../src/domains/lint";
 import { captureSite } from "../../src/domains/ingest/screenshot";
+import { discoverPages } from "../../src/domains/ingest/sitemap";
+import { captureScenarios } from "../../src/domains/ingest/multi-page";
 import type {
   ShushuEnv,
   InspectionResult,
@@ -71,7 +73,7 @@ export const onRequestPost = async (ctx: OnRequestContext): Promise<Response> =>
     // HTML snapshot R2 저장 (waitUntil로 비동기 처리)
     ctx.waitUntil(saveHtmlSnapshot(env, id, site.html));
 
-    // Cloudflare Browser Rendering으로 데스크탑·모바일 캡처 (옵션 = BROWSER binding 있을 때만)
+    // Cloudflare Browser Rendering으로 메인 데스크탑·모바일 캡처
     try {
       const shots = await captureSite(env, id, body.url);
       if (shots) {
@@ -82,8 +84,29 @@ export const onRequestPost = async (ctx: OnRequestContext): Promise<Response> =>
         };
       }
     } catch (err) {
-      // 캡처 실패해도 검수는 계속 진행
       console.error("Screenshot capture failed:", err);
+    }
+
+    // 사이트 내 페이지 자동 추정 + 시나리오 캡처 (Day 1 사용자 흐름 시뮬레이션)
+    try {
+      const pages = discoverPages(site.html, body.url);
+      if (pages.length > 0) {
+        const scenarios = await captureScenarios(env, id, pages);
+        result.meta.scenarios = scenarios.map((s) => ({
+          id: s.id,
+          scenario: s.scenario,
+          url: s.url,
+          source: s.source,
+          priority: s.priority,
+          desktopUrl: s.desktopOk ? `/api/screenshot?id=${id}&type=${s.id}-desktop` : null,
+          mobileUrl: s.mobileOk ? `/api/screenshot?id=${id}&type=${s.id}-mobile` : null,
+          httpStatus: s.httpStatus,
+          consoleErrors: s.consoleErrors,
+          networkErrors: s.networkErrors,
+        }));
+      }
+    } catch (err) {
+      console.error("Scenario capture failed:", err);
     }
 
     // HTML 파싱 + 자체 휴리스틱

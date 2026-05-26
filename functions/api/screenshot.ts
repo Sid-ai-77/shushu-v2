@@ -17,8 +17,9 @@ export const onRequestGet = async (ctx: OnRequestContext): Promise<Response> => 
     return new Response("id is required", { status: 400 });
   }
 
-  if (type !== "desktop" && type !== "mobile") {
-    return new Response("Invalid type. Use 'desktop' or 'mobile'", { status: 400 });
+  // type = "desktop" | "mobile" | "{scenarioId}-desktop" | "{scenarioId}-mobile"
+  if (!/^[\w-]+$/.test(type)) {
+    return new Response("Invalid type", { status: 400 });
   }
 
   const key = `screenshots/${id}-${type}.png`;

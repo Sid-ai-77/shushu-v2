@@ -54,6 +54,20 @@ export interface InspectionMeta {
     mobileUrl: string;
     capturedAt: string;
   };
+  scenarios?: ScenarioResult[];
+}
+
+export interface ScenarioResult {
+  id: string;
+  scenario: string;
+  url: string;
+  source: string;
+  priority: number;
+  desktopUrl: string | null;
+  mobileUrl: string | null;
+  httpStatus: number | null;
+  consoleErrors: string[];
+  networkErrors: { url: string; status: number }[];
 }
 
 export interface InspectionResult {
