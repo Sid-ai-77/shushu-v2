@@ -11,6 +11,7 @@ import {
 } from "../../src/domains/ingest/storage";
 import { runQuery } from "../../src/domains/query";
 import { runLint } from "../../src/domains/lint";
+import { captureSite } from "../../src/domains/ingest/screenshot";
 import type {
   ShushuEnv,
   InspectionResult,
@@ -69,6 +70,21 @@ export const onRequestPost = async (ctx: OnRequestContext): Promise<Response> =>
 
     // HTML snapshot R2 저장 (waitUntil로 비동기 처리)
     ctx.waitUntil(saveHtmlSnapshot(env, id, site.html));
+
+    // Cloudflare Browser Rendering으로 데스크탑·모바일 캡처 (옵션 = BROWSER binding 있을 때만)
+    try {
+      const shots = await captureSite(env, id, body.url);
+      if (shots) {
+        result.meta.screenshots = {
+          desktopUrl: `/api/screenshot/${id}?type=desktop`,
+          mobileUrl: `/api/screenshot/${id}?type=mobile`,
+          capturedAt: shots.capturedAt,
+        };
+      }
+    } catch (err) {
+      // 캡처 실패해도 검수는 계속 진행
+      console.error("Screenshot capture failed:", err);
+    }
 
     // HTML 파싱 + 자체 휴리스틱
     const parsed = parseHtml(site.html, body.url);

@@ -49,6 +49,11 @@ export interface InspectionMeta {
     tsFiles: number;
     componentFiles: number;
   };
+  screenshots?: {
+    desktopUrl: string;
+    mobileUrl: string;
+    capturedAt: string;
+  };
 }
 
 export interface InspectionResult {
@@ -73,6 +78,11 @@ export interface ShushuEnv {
   SHUSHU_KV: KVNamespace;
   SHUSHU_R2: R2Bucket;
   GEMINI_API_KEY: string;
+  BROWSER?: BrowserBinding;
+}
+
+export interface BrowserBinding {
+  fetch(request: Request): Promise<Response>;
 }
 
 // Cloudflare 타입 (minimal·@cloudflare/workers-types 없이 사용 가능)

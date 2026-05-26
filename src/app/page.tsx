@@ -201,7 +201,7 @@ function RunningCard({ url }: { url: string }) {
         <div className="spinner-large" />
         <div className="run-text">
           <div className="run-step">Ingest → Query → Lint 파이프라인 진행 중</div>
-          <div className="run-sub">사이트 fetch · HTML 파싱 · Gemini AI 분석 · 라벨링</div>
+          <div className="run-sub">사이트 fetch · 스크린샷 캡처 · HTML 파싱 · Gemini AI 분석 · 라벨링</div>
         </div>
       </div>
     </div>
@@ -237,6 +237,29 @@ function ResultCard(props: {
 
       {props.ai?.error && (
         <div className="warn-box">AI 분석 일부 제한 = {props.ai.error}. 자체 휴리스틱 결과만 표시.</div>
+      )}
+
+      {result.meta.screenshots && (
+        <div className="screenshots-section">
+          <div className="screenshots-head">
+            <h3>슈슈가 본 화면</h3>
+            <p>Cloudflare Browser Rendering으로 실제 사이트를 로드하고 데스크탑·모바일 양쪽 캡처했습니다.</p>
+          </div>
+          <div className="screenshots-grid">
+            <div className="shot-card">
+              <div className="shot-label">데스크탑 · 1440×900</div>
+              <a href={result.meta.screenshots.desktopUrl} target="_blank" rel="noopener noreferrer">
+                <img src={result.meta.screenshots.desktopUrl} alt="데스크탑 캡처" />
+              </a>
+            </div>
+            <div className="shot-card">
+              <div className="shot-label">모바일 · 390×844</div>
+              <a href={result.meta.screenshots.mobileUrl} target="_blank" rel="noopener noreferrer">
+                <img src={result.meta.screenshots.mobileUrl} alt="모바일 캡처" />
+              </a>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="filters">
@@ -439,6 +462,17 @@ const globalStyles = `
 @keyframes spin { to { transform: rotate(360deg); } }
 .run-text .run-step { font-size: 14px; font-weight: 700; letter-spacing: -0.015em; margin-bottom: 4px; }
 .run-text .run-sub { font-size: 12px; color: var(--mute); font-weight: 500; }
+
+.screenshots-section { margin-bottom: 24px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px; }
+.screenshots-head { margin-bottom: 14px; }
+.screenshots-head h3 { margin: 0 0 4px; font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+.screenshots-head p { margin: 0; font-size: 12px; color: var(--mute); font-weight: 500; }
+.screenshots-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; align-items: start; }
+@media (max-width: 760px) { .screenshots-grid { grid-template-columns: 1fr; } }
+.shot-card { background: #FAFAF9; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.shot-label { padding: 10px 14px; font-size: 11px; font-weight: 700; color: var(--ink2); background: var(--line2); letter-spacing: 0.02em; }
+.shot-card img { display: block; width: 100%; height: auto; }
+.shot-card a { display: block; }
 
 .results-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
 .results-head h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.025em; }
