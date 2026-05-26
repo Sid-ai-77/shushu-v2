@@ -76,8 +76,8 @@ export const onRequestPost = async (ctx: OnRequestContext): Promise<Response> =>
       const shots = await captureSite(env, id, body.url);
       if (shots) {
         result.meta.screenshots = {
-          desktopUrl: `/api/screenshot/${id}?type=desktop`,
-          mobileUrl: `/api/screenshot/${id}?type=mobile`,
+          desktopUrl: `/api/screenshot?id=${id}&type=desktop`,
+          mobileUrl: `/api/screenshot?id=${id}&type=mobile`,
           capturedAt: shots.capturedAt,
         };
       }
