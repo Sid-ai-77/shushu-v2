@@ -145,12 +145,13 @@ export function buildGeminiPrompt(input: BuildPromptInput): string {
   lines.push("");
 
   lines.push(`# 출력 룰`);
-  lines.push("- 위 HTML과 메타를 분석해서 최대 12건 Finding 출력");
+  lines.push("- 위 HTML과 메타를 분석해서 **최대 6건** Finding 출력 (압축 우선)");
   lines.push("- 자체 휴리스틱에서 이미 검출한 항목과 중복 X");
   lines.push("- 가장 가치 있고 구체적인 발견만");
   lines.push("- label = AUTO·PROPOSE·HUMAN_ONLY 중 정확히 1개");
   lines.push("- category = 위 10종 중 정확히 1개");
-  lines.push("- fix = 복사 가능한 코드 또는 명확한 액션 (추상적 X)");
+  lines.push("- fix = 복사 가능한 코드 또는 명확한 액션 (추상적 X·최대 200자)");
+  lines.push("- description = 최대 200자");
   lines.push("- autoFixable = label이 AUTO면 true·아니면 false");
   lines.push("- 응답은 JSON 배열만 (다른 텍스트 X)");
 

@@ -69,7 +69,7 @@ export async function runQuery(input: RunQueryInput): Promise<RunQueryResult> {
     systemInstruction: GEMINI_SYSTEM_INSTRUCTION,
     responseSchema: GEMINI_RESPONSE_SCHEMA,
     temperature: 0.3,
-    maxOutputTokens: 4096,
+    maxOutputTokens: 8192,
   });
 
   if (!result.ok || !result.data) {
